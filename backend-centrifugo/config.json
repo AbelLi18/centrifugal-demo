@@ -1,0 +1,36 @@
+{
+    "admin": true,
+    "port": 8000,
+    "debug": true,
+    "presence": true,
+    "history_size": 100,
+    "history_lifetime": 600,
+    "publish": true,
+    "anonymous": true,
+    "subscribe_to_publish": true,
+    "join_leave": true,
+    "history_recover": true,
+    "log_file": "/srv/logs/centrifugo.log",
+    "log_level": "debug",
+    "engine": "redis",
+    "redis_host": "127.0.0.1",
+    "redis_port": "6379",
+    "redis_db": "12",
+    "redis_password": "abc123_",
+    "secret":"453a5488-586e-4d46-a79a-920af89e0b30",
+    "admin_password":"4ce7384d-cdcd-4d93-96db-9c911a8a53f3",
+    "admin_secret":"ef390b3e-f03f-4c7d-8e48-5d39f03bda10",
+    "api_key":"12a4e62c-e055-4a23-8bbd-d248740f5458",
+    "namespaces":[
+        {
+            "name":"public",
+            "anonymous":true,
+            "publish":true,
+            "presence":true,
+            "join_leave":true,
+            "history_size":20,
+            "history_lifetime":30,
+            "history_recover":true
+        }
+    ]
+}

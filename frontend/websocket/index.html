@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>centrifugo</title>
+</head>
+
+<body>
+    <div>使用原生WebSocket, 连接后台8000服务</div>
+    <div>
+        请输入用户id: <input type="text" id="userId">
+        <button onclick="document.getElementById('userId').disabled=true;init()">登录</button>
+    </div>
+    <div>
+        输入消息: <input type="text" id="msg">
+        <button onclick="publish(document.getElementById('msg').value)">发送消息</button>
+    </div>
+    <div>消息记录:</div>
+    <div id="console"></div>
+</body>
+<script>
+    // 发布消息到通道 
+    function init (msg) {
+        const ws = new WebSocket("ws://127.0.0.1:8000/connection/websocket")
+        window.ws = ws
+        console.log("start: ", ws)
+        // 与 Centrifugo 建立 WebSocket 连接
+        ws.onopen = event => {
+            // 发送 connect 指令
+            ws.send(JSON.stringify({
+                id: 1,
+                method: "connect",
+                params: {
+                    data: {},
+                    // 根据 config.json 的 secret 的值生成 JWT token, 可将用户id 和 过期时间加入jwt参数
+                    // eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE2NjkxMTAwMDB9.knY_m_u666DgxnOvtTDYrMnrjvLpVkwH2l4_FMpQva0
+                    token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE1MTYyMzkwMjJ9.TdrLvg2sZS1WhSku91KHPmJC9saC8KdBE7UMqUJqOVs"
+                }
+            }))
+            // 发送 subscribe 指令，订阅 bomb1 渠道的消息
+            ws.send(JSON.stringify({
+                id: 1,
+                method: "subscribe",
+                params: {
+                    channel: "bomb1",
+                }
+            }))
+            console.info("Connection open ...")
+            ws.send(JSON.stringify({
+                id: 2,
+                method: "history",
+                params: {
+                    channel: "bomb1",
+                }
+            }))
+            ws.send(JSON.stringify({
+                id: 3,
+                method: "ping",
+                params: {
+                    channel: "bomb1",
+                }
+            }))
+        }
+        var t1 = window.setInterval(ping, 1000);
+
+        ws.onmessage = event => {
+            console.log("onmessage:  ", event)
+            var eventData = event.data.split("\n")
+            for (i = 0; i < eventData.length; i++) {
+                if (eventData[i]) {
+                    var data = JSON.parse(eventData[i].replace(/\n/g,""));
+                    if (!data.id) {
+                        var userId;
+                        try {
+                            userId = data.result.data.data.userId
+                        } catch (error) {
+                            userId = ''
+                        }
+                        if (userId) {
+                            document.getElementById("console").innerText = document.getElementById("console").innerText + '\n' + userId + ": " + JSON.stringify(data)
+                        }
+                    } else if (data.id === 2) {
+                        document.getElementById("console").innerText = document.getElementById("console").innerText + '\n历史数据: ' + JSON.stringify(data)
+                    }
+                }
+            }
+        }
+        ws.onclose = event => {
+            console.log("onclose:  ", event)
+            console.info("Connection closed")
+            window.clearInterval(t1);
+        }
+    }
+
+
+    function ping () {
+        ws.send(JSON.stringify({
+            id: 3,
+            method: "ping",
+            params: {
+                channel: "bomb1",
+            }
+        }))
+    }
+
+    // 发布消息到通道 
+    function publish (msg) {
+        ws.send(JSON.stringify({
+            id: 4,
+            method: "publish",
+            params: {
+                channel: "bomb1",
+                data: {
+                    text: msg,
+                    userId: document.getElementById('userId').value
+                }
+            }
+        }))
+    }
+</script>
+
+</html>

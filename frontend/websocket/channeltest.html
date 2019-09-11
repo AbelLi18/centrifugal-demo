@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>centrifugo</title>
+</head>
+
+<body>
+    <div>渠道带#号 ch1#1, 则token中的用户id必须包含在#后面</div>
+    <div id="console"></div>
+</body>
+<script>
+    const ws = new WebSocket("ws://127.0.0.1:8000/connection/websocket")
+    console.log("start: ", ws)
+    // 与 Centrifugo 建立 WebSocket 连接
+    ws.onopen = event => {
+        // 发送 connect 指令
+        ws.send(JSON.stringify({
+            id: 1,
+            method: "connect",
+            params: {
+                data: {},
+                // 根据 config.json 的 secret 的值生成 JWT token
+                token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE1NjkxMTAwMDB9.Y2zsYca7u6XCFnOVjNyK7wrAwV6rL2PgEdZOrgRBifw"
+            }
+        }))
+        // 发送 subscribe 指令，订阅 ch1 渠道的消息
+        ws.send(JSON.stringify({
+            id: 1,
+            method: "subscribe",
+            params: {
+                channel: "ch1#1",
+            }
+        }))
+        console.info("Connection open ...")
+        ws.send(JSON.stringify({
+            id: 1,
+            method: "history",
+            params: {
+                channel: "ch1#1",
+            }
+        }))
+        ws.send(JSON.stringify({
+            id: 10,
+            method: "ping",
+            params: {
+                channel: "ch1#1",
+            }
+        }))
+    }
+    ws.onmessage = event => {
+        console.log("onmessage:  ", event)
+        document.getElementById("console").innerText = document.getElementById("console").innerText + '\n' + event.data
+    }
+    ws.onclose = event => {
+        console.log("onclose:  ", event)
+        console.info("Connection closed")
+    }
+</script>
+
+</html>

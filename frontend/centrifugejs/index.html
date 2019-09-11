@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>socktest</title>
+    <script src="../js/centrifuge.min.js"></script>
+</head>
+<body>
+    <div>使用centrifuge-js, 连接后台8001服务</div>
+    <div>
+        请输入用户id: <input type="text" id="userId">
+        <button onclick="document.getElementById('userId').disabled=true;init()">登录</button>
+        <button onclick="closeit()">退出登录</button>
+    </div>
+    <div>
+        输入消息: <input type="text" id="msg">
+        <button onclick="publish(document.getElementById('msg').value)">发送消息</button>
+    </div>
+    <button onclick="history()">拉取历史消息</button>
+    <div>消息记录:</div>
+    <div id="console"></div>
+</body>
+</html>
+<script>
+    function init() {
+        // 初始化 centrifugo 客户端
+        window.centrifuge = new Centrifuge('ws://127.0.0.1:8001/connection/websocket');
+        // 根据 config.json 的 secret 的值生成 JWT token, 可将用户id 和 过期时间加入jwt参数
+        // eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE2NjkxMTAwMDB9.knY_m_u666DgxnOvtTDYrMnrjvLpVkwH2l4_FMpQva0
+        centrifuge.setToken("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE1MTYyMzkwMjJ9.TdrLvg2sZS1WhSku91KHPmJC9saC8KdBE7UMqUJqOVs");
+        // 监听连接事件
+        centrifuge.on('connect',function(context) {
+            console.log("connect: ", context)
+        })
+        // 监听断开连接事件
+        centrifuge.on('disconnect', function(context) {
+            console.log("disconnect: ", context)
+        });
+        // 启动连接
+        centrifuge.connect();
+
+        // 监听频道内的消息
+        var callbacks = {
+            "publish": function(message) {
+                console.log("subscribe publish: ", message);
+                document.getElementById("console").innerText = document.getElementById("console").innerText + '\n' + message.data.userId + ": " + JSON.stringify(message)
+            },
+            "join": function(message) {
+                console.log("subscribe join: ", message);
+            },
+            "leave": function(message) {
+                console.log("subscribe leave: ", message);
+            },
+            "subscribe": function(message) {
+                console.log("subscribe subscribe: ", message);
+            },
+            "error": function(message) {
+                console.log("subscribe error: ", message);
+            },
+            "unsubscribe": function(message) {
+                console.log("subscribe unsubscribe: ", message);
+            }
+        }
+        window.subscription = centrifuge.subscribe("bomb1", callbacks);
+    }
+    // 发布消息到通道 
+    function publish (msg) {
+        centrifuge.publish("bomb1", {"text": msg, "userId": document.getElementById('userId').value}).then(function(res) {
+            console.log("publish: ", res);
+        }, function(err) {
+            console.log('publish error', err);
+        });
+    };
+    // 查看历史消息
+    function history() {
+        subscription.history().then(function(message) {
+            console.log("history: ", message);
+            document.getElementById("console").innerText = document.getElementById("console").innerText + '\n历史数据: ' + JSON.stringify(message)
+        }, function(err) {
+            console.log("history err: ", message);
+        });
+    }
+    // 关闭连接
+    function closeit() {
+        centrifuge.disconnect();
+        console.log("close it: ");
+        document.getElementById('userId').disabled=false
+    }
+</script>
